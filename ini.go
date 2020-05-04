@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"syscall"
 
 	"github.com/dchest/safefile"
 	"github.com/go-ini/ini"
@@ -39,17 +40,29 @@ func iniLoadOrEmpty(filename string) (*ini.File, error) {
 
 // iniSave safely writes the ini file to the named file.
 func iniSave(filename string, iniFile *ini.File) error {
-	f, err := safefile.Create(filename, 0644)
+	finfo, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+	f, err := safefile.Create(filename, finfo.Mode())
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	// safefile.Create doesn't seem to respect the permissions
+	// so we need to recover the original permissions
+	if err := os.Chmod(f.File.Name(), finfo.Mode()); err != nil {
+		return err
+	}
+	sys := finfo.Sys().(*syscall.Stat_t)
+	if err := os.Chown(f.File.Name(), int(sys.Uid), int(sys.Gid)); err != nil {
+		return err
+	}
 
 	_, err = iniFile.WriteTo(f)
 	if err != nil {
 		return err
 	}
-
 	return f.Commit()
 }
 
