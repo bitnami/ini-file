@@ -40,27 +40,34 @@ func iniLoadOrEmpty(filename string) (*ini.File, error) {
 
 // iniSave safely writes the ini file to the named file.
 func iniSave(filename string, iniFile *ini.File) error {
-	f, err := safefile.Create(filename, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+	mode := os.FileMode(0644)
+	uid := -1
+	gid := -1
+
 	finfo, err := os.Stat(filename)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
 	} else {
-		// safefile.Create doesn't seem to respect the permissions
-		// so we need to recover the original permissions
-		if err := os.Chmod(f.File.Name(), finfo.Mode()); err != nil {
-			return err
-		}
-		sys := finfo.Sys().(*syscall.Stat_t)
-		if err := os.Chown(f.File.Name(), int(sys.Uid), int(sys.Gid)); err != nil {
-			return err
-		}
+		mode = finfo.Mode()
+		uid = int(finfo.Sys().(*syscall.Stat_t).Uid)
+		gid = int(finfo.Sys().(*syscall.Stat_t).Gid)
 	}
+
+	f, err := safefile.Create(filename, mode)
+	if err != nil {
+		return err
+	}
+	// Recover original ownership/permissions
+	if err := os.Chmod(f.File.Name(), mode); err != nil {
+		return err
+	}
+	if err := os.Chown(f.File.Name(), uid, gid); err != nil {
+		return err
+	}
+
+	defer f.Close()
 
 	_, err = iniFile.WriteTo(f)
 	if err != nil {
