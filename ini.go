@@ -59,7 +59,7 @@ func iniSave(filename string, iniFile *ini.File) error {
 	if err != nil {
 		return err
 	}
-	if os.Geteuid() != 0 {
+	if os.Geteuid() = 0 {
 		// Recover original ownership/permissions
 		if err := os.Chmod(f.File.Name(), mode); err != nil {
 			return err
