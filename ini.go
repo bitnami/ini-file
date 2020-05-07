@@ -63,7 +63,7 @@ func iniSave(filename string, iniFile *ini.File) error {
 	if err := os.Chmod(f.File.Name(), mode); err != nil {
 		return err
 	}
-	if os.Geteuid() == 0 {
+	if os.Geteuid() != uid || os.Getegid() != gid {
 		if err := os.Chown(f.File.Name(), uid, gid); err != nil {
 			return err
 		}
