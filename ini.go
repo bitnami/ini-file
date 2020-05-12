@@ -41,7 +41,12 @@ func iniSave(filename string, iniFile *ini.File) error {
 	// The third argument, perm, is ignored when the file doesn't exist
 	// So we can safely set it to '0644', it won't modify the existing permissions
 	// if the file exists.
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, os.FileMode(0644))
+	f, err := os.OpenFile(filename, os.O_SYNC|os.O_RDWR|os.O_CREATE, os.FileMode(0644))
+	if err != nil {
+		return err
+	}
+	// Clear file content
+	err = f.Truncate(0)
 	if err != nil {
 		return err
 	}
