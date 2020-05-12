@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"syscall"
 
-	"github.com/dchest/safefile"
 	"github.com/go-ini/ini"
 )
 
@@ -38,44 +36,25 @@ func iniLoadOrEmpty(filename string) (*ini.File, error) {
 	return nil, err
 }
 
-// iniSave safely writes the ini file to the named file.
+// iniSave writes the ini file to the named file.
 func iniSave(filename string, iniFile *ini.File) error {
-	mode := os.FileMode(0644)
-	uid := -1
-	gid := -1
-
-	finfo, err := os.Stat(filename)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-	} else {
-		mode = finfo.Mode()
-		uid = int(finfo.Sys().(*syscall.Stat_t).Uid)
-		gid = int(finfo.Sys().(*syscall.Stat_t).Gid)
-	}
-
-	f, err := safefile.Create(filename, mode)
+	// The third argument, perm, is ignored when the file doesn't exist
+	// So we can safely set it to '0644', it won't modify the existing permissions
+	// if the file exists.
+	f, err := os.OpenFile(filename, os.O_SYNC|os.O_RDWR|os.O_CREATE, os.FileMode(0644))
 	if err != nil {
 		return err
 	}
-	// Recover original ownership/permissions
-	if err := os.Chmod(f.File.Name(), mode); err != nil {
+	// Clear file content
+	err = f.Truncate(0)
+	if err != nil {
 		return err
 	}
-	if os.Geteuid() != uid || os.Getegid() != gid {
-		if err := os.Chown(f.File.Name(), uid, gid); err != nil {
-			return err
-		}
-	}
-
-	defer f.Close()
-
 	_, err = iniFile.WriteTo(f)
 	if err != nil {
 		return err
 	}
-	return f.Commit()
+	return f.Close()
 }
 
 func iniFileGet(file string, s string, key string) (string, error) {
@@ -108,7 +87,6 @@ func iniFileSet(file string, s string, key string, value interface{}) error {
 	default:
 		return fmt.Errorf("invalid key type %T", v)
 	}
-
 	return iniSave(file, iniFile)
 }
 
