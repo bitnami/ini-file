@@ -7,12 +7,19 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
+// Options defines options supported by all subcommands
+type Options struct {
+	IgnoreInlineComments bool `long:"ignore-inline-comments" description:"Ignore inline comments"`
+}
+
+var globalOpts = &Options{}
+
 func main() {
 	setCmd := NewINIFileSetCmd()
 	getCmd := NewINIFileGetCmd()
 	delCmd := NewINIFileDelCmd()
 
-	parser := flags.NewParser(nil, flags.HelpFlag|flags.PassDoubleDash)
+	parser := flags.NewParser(globalOpts, flags.HelpFlag|flags.PassDoubleDash)
 
 	parser.AddCommand("set", "INI File Set", "Sets values in a INI file", setCmd)
 	parser.AddCommand("get", "INI FILE Get", "Gets values from a INI file", getCmd)

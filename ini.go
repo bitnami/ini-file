@@ -12,13 +12,18 @@ func init() {
 	ini.PrettyFormat = false
 }
 
+func loadOptions() ini.LoadOptions {
+	return ini.LoadOptions{
+		// Support mysql-style "boolean" values - a key wth no value.
+		AllowBooleanKeys:    true,
+		IgnoreInlineComment: globalOpts.IgnoreInlineComments,
+	}
+}
+
 // iniLoad attempts to load the ini file.
 func iniLoad(filename string) (*ini.File, error) {
 	return ini.LoadSources(
-		ini.LoadOptions{
-			// Support mysql-style "boolean" values - a key wth no value.
-			AllowBooleanKeys: true,
-		},
+		loadOptions(),
 		filename,
 	)
 }
@@ -31,7 +36,7 @@ func iniLoadOrEmpty(filename string) (*ini.File, error) {
 		return f, nil
 	}
 	if os.IsNotExist(err) {
-		return ini.Empty(), nil
+		return ini.Empty(loadOptions()), nil
 	}
 	return nil, err
 }
