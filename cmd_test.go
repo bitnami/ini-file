@@ -12,10 +12,11 @@ import (
 )
 
 type iniTestValue struct {
-	section   string
-	key       string
-	value     string
-	isBoolean bool
+	globalOpts *Options
+	section    string
+	key        string
+	value      string
+	isBoolean  bool
 }
 type iniSetTest struct {
 	name          string
@@ -69,6 +70,46 @@ var delTests = []iniDelTest{
 		expectedText: `\[general\]\nkey1=val1\n\s*$`,
 	},
 	{
+		name: "Deletes key in file containing semicolon values in regular mode",
+		values: []iniTestValue{
+			{
+				section: "general", key: "key2",
+			},
+		},
+		initialText:  "[general]\nkey1=`my ; value`\nkey2=val2",
+		expectedText: "\\[general\\]\nkey1=`my ; value`\n\\s*$",
+	},
+	{
+		name: "Deletes key in file containing semicolon values in regular mode (2)",
+		values: []iniTestValue{
+			{
+				section: "general", key: "key2",
+			},
+		},
+		initialText:  "[general]\nkey1=my ; my comment\nkey2=val2",
+		expectedText: "\\[general\\]\n; my comment\nkey1=my\n\\s*$",
+	},
+	{
+		name: "Deletes key in file containing semicolon values in ignore-inline-comments mode",
+		values: []iniTestValue{
+			{
+				section: "general", key: "key2", globalOpts: &Options{IgnoreInlineComments: true},
+			},
+		},
+		initialText:  "[general]\nkey1=`my ; value`\nkey2=val2",
+		expectedText: "\\[general\\]\nkey1=my ; value\n\\s*$",
+	},
+	{
+		name: "Deletes key in file containing semicolon values in ignore-inline-comments mode (2)",
+		values: []iniTestValue{
+			{
+				section: "general", key: "key2", globalOpts: &Options{IgnoreInlineComments: true},
+			},
+		},
+		initialText:  "[general]\nkey1=my ; my comment\nkey2=val2",
+		expectedText: "\\[general\\]\nkey1=my ; my comment\n\\s*$",
+	},
+	{
 		name:        "Deletes regular value",
 		initialText: "[general]\nkey1=val1\nkey2=val2\n",
 		values: []iniTestValue{
@@ -109,6 +150,36 @@ var getTests = []iniGetTest{
 		},
 	},
 	{
+		name:        "Get value with semicolon in regular mode",
+		initialText: "[general]\nmykey=`my ; value`\n",
+		iniTestValue: iniTestValue{
+			section: "general", key: "mykey", value: "my ; value",
+		},
+	},
+	{
+		name:        "Get value with semicolon in regular mode (2)",
+		initialText: "[general]\nmykey=my ; this is a comment\n",
+		iniTestValue: iniTestValue{
+			section: "general", key: "mykey", value: "my",
+		},
+	},
+	{
+		name:        "Get value with semicolon in ignore-inline-comments mode",
+		initialText: "[general]\nmykey=`my ; value`\n",
+		iniTestValue: iniTestValue{
+			globalOpts: &Options{IgnoreInlineComments: true},
+			section:    "general", key: "mykey", value: "my ; value",
+		},
+	},
+	{
+		name:        "Get value with semicolon in ignore-inline-comments mode (2)",
+		initialText: "[general]\nmykey=my ; this is a comment\n",
+		iniTestValue: iniTestValue{
+			globalOpts: &Options{IgnoreInlineComments: true},
+			section:    "general", key: "mykey", value: "my ; this is a comment",
+		},
+	},
+	{
 		name:        "Get present boolean key",
 		initialText: "[general]\nmykey\n",
 		iniTestValue: iniTestValue{
@@ -138,6 +209,25 @@ var setTests = []iniSetTest{
 			},
 		},
 		expectedText: `mykey=myvalue\n`,
+	},
+	{
+		name: "Sets value with semicolon in regular mode",
+		values: []iniTestValue{
+			{
+				section: "general", key: "mykey", value: "my ; value",
+			},
+		},
+		expectedText: "mykey=`my ; value`\n",
+	},
+	{
+		name: "Sets value with semicolon in ignore-inline-comments mode",
+		values: []iniTestValue{
+			{
+				globalOpts: &Options{IgnoreInlineComments: true},
+				section:    "general", key: "mykey", value: "my ; value",
+			},
+		},
+		expectedText: "mykey=my ; value\n",
 	},
 	{
 		name: "Sets boolean value",
@@ -226,22 +316,30 @@ func AssertFileDoesNotContain(t *testing.T, path string, expected interface{}, m
 	})
 }
 func TestINIFileSetCmd_Execute(t *testing.T) {
-	type testFn func(file, section, key, value string, isBoolean bool) error
-	var testViaCommand = func(file, section, key, value string, isBoolean bool) error {
+	type testFn func(file, section, key, value string, isBoolean bool, opts *Options) error
+	var testViaCommand = func(file, section, key, value string, isBoolean bool, opts *Options) error {
 		cmd := NewINIFileSetCmd()
 		cmd.Section = section
 		cmd.Key = key
 		cmd.Value = value
 		cmd.Boolean = isBoolean
 		cmd.Args.File = file
+		if opts != nil {
+			globalOpts = opts
+		} else {
+			globalOpts = &Options{}
+		}
 		return cmd.Execute([]string{})
 	}
-	var testViaCli = func(file, section, key, value string, isBoolean bool) error {
+	var testViaCli = func(file, section, key, value string, isBoolean bool, opts *Options) error {
 		args := []string{"set", "-k", key, "-s", section, "-v", value}
 		if isBoolean {
 			args = append(args, "-b")
 		}
 		args = append(args, file)
+		if opts != nil && opts.IgnoreInlineComments {
+			args = append([]string{"--ignore-inline-comments"}, args...)
+		}
 		res := RunTool(args...)
 		if !res.Success() {
 			return fmt.Errorf("%s", res.Stderr())
@@ -268,7 +366,7 @@ func TestINIFileSetCmd_Execute(t *testing.T) {
 			testTitle := fmt.Sprintf("%s (via %s)", tt.name, id)
 			t.Run(testTitle, func(t *testing.T) {
 				for _, v := range tt.values {
-					err = fn(file, v.section, v.key, v.value, v.isBoolean)
+					err = fn(file, v.section, v.key, v.value, v.isBoolean, v.globalOpts)
 					if err != nil {
 						break
 					}
@@ -289,21 +387,28 @@ func TestINIFileSetCmd_Execute(t *testing.T) {
 }
 
 func TestINIFileGetCmd_Execute(t *testing.T) {
-	type testFn func(file, section, key string) (string, error)
-	var testViaCommand = func(file, section, key string) (string, error) {
+	type testFn func(file, section, key string, opts *Options) (string, error)
+	var testViaCommand = func(file, section, key string, opts *Options) (string, error) {
 		b := &bytes.Buffer{}
 		cmd := NewINIFileGetCmd()
 		cmd.Section = section
 		cmd.Key = key
 		cmd.Args.File = file
 		cmd.OutWriter = b
-
+		if opts != nil {
+			globalOpts = opts
+		} else {
+			globalOpts = &Options{}
+		}
 		err := cmd.Execute([]string{})
 		stdout := b.String()
 		return stdout, err
 	}
-	var testViaCli = func(file, section, key string) (string, error) {
+	var testViaCli = func(file, section, key string, opts *Options) (string, error) {
 		args := []string{"get", "-k", key, "-s", section, file}
+		if opts != nil && opts.IgnoreInlineComments {
+			args = append([]string{"--ignore-inline-comments"}, args...)
+		}
 		res := RunTool(args...)
 		stdout := res.Stdout()
 		var err error
@@ -332,7 +437,7 @@ func TestINIFileGetCmd_Execute(t *testing.T) {
 
 			t.Run(testTitle, func(t *testing.T) {
 
-				stdout, err := fn(file, tt.section, tt.key)
+				stdout, err := fn(file, tt.section, tt.key, tt.globalOpts)
 
 				if tt.expectedErr != nil {
 					if err == nil {
@@ -350,16 +455,24 @@ func TestINIFileGetCmd_Execute(t *testing.T) {
 }
 
 func TestINIFileDelCmd_Execute(t *testing.T) {
-	type testFn func(file, section, key string) error
-	var testViaCommand = func(file, section, key string) error {
+	type testFn func(file, section, key string, opts *Options) error
+	var testViaCommand = func(file, section, key string, opts *Options) error {
 		cmd := NewINIFileDelCmd()
 		cmd.Section = section
 		cmd.Key = key
 		cmd.Args.File = file
+		if opts != nil {
+			globalOpts = opts
+		} else {
+			globalOpts = &Options{}
+		}
 		return cmd.Execute([]string{})
 	}
-	var testViaCli = func(file, section, key string) error {
+	var testViaCli = func(file, section, key string, opts *Options) error {
 		args := []string{"del", "-k", key, "-s", section, file}
+		if opts != nil && opts.IgnoreInlineComments {
+			args = append([]string{"--ignore-inline-comments"}, args...)
+		}
 		res := RunTool(args...)
 		if !res.Success() {
 			return fmt.Errorf("%s", res.Stderr())
@@ -386,7 +499,7 @@ func TestINIFileDelCmd_Execute(t *testing.T) {
 			t.Run(testTitle, func(t *testing.T) {
 				for _, v := range tt.values {
 
-					err = fn(file, v.section, v.key)
+					err = fn(file, v.section, v.key, v.globalOpts)
 					if err != nil {
 						break
 					}
