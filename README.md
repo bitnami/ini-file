@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/bitnami/ini-file.svg?style=svg)](https://circleci.com/gh/bitnami/ini-file)
+[![CI](https://github.com/bitnami/ini-file/actions/workflows/main.yml/badge.svg)](https://github.com/bitnami/ini-file/actions/workflows/main.yml)
 
 # ini-file
 
