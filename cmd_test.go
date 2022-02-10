@@ -259,6 +259,20 @@ var setTests = []iniSetTest{
 		expectedText: `\[testbool\]\nmykey=myvalue\n\s*$`,
 	},
 	{
+		name: "Set value with duplicate key",
+		initialText: `
+[testduplicate]
+mykey=value1
+mykey=value2
+		`,
+		values: []iniTestValue{
+			{
+				section: "testduplicate", key: "mykey", value: "value3",
+			},
+		},
+		expectedText: `^\[testduplicate\]\nmykey=value1\nmykey=value2\nmykey=value3\n\s*$`,
+	},
+	{
 		name: "Set multiple keys",
 		values: []iniTestValue{
 			{section: "general", key: "key1", value: "value1"},
@@ -294,6 +308,15 @@ key4=value4
 			{section: "general", key: "mykey", value: "myvalue"},
 		},
 		expectedText: `^# this is a comment\n\[general\]\n# key 1 sample\nkey1=value1\nmykey=myvalue\n\s*$`,
+	},
+	{
+		name:          "Preserve arrays",
+		createIniFile: true,
+		initialText:   "[general]\narray[]=value1\narray[]=value2",
+		values: []iniTestValue{
+			{section: "general", key: "mykey", value: "myvalue"},
+		},
+		expectedText: `^\[general\]\narray\[\]=value1\narray\[\]=value2\nmykey=myvalue\n\s*$`,
 	},
 }
 

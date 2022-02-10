@@ -4,7 +4,7 @@
 
 This tool allows manipulating INI files.
 
-# Baisc usage
+# Basic usage
 
 ~~~bash
 $> ini-file --help
@@ -85,3 +85,34 @@ $> cat ./my.ini
 rate=very good
 already_read
 ~~~
+
+## Working with identical keys in the file
+
+~~~bash
+$> cat > ./my.ini <<"EOF"
+[My book]
+title=A wonderful book
+author[]=Bitnami
+author[]=Contributors
+EOF
+
+# get retrieves the first mention of the key
+$> ini-file get --section "My book" --key "author[]" ./my.ini
+Bitnami
+
+# If the original file contains the key more than once, set adds the new value at the end
+$> ini-file set --section "My book" --key "author[]" --value "Other" ./my.ini
+$> cat ./my.ini
+title=A wonderful book
+author[]=Bitnami
+author[]=Contributors
+author[]=Other
+
+# del removes all keys with the given name
+$> ini-file del --section "My book" --key "author[]" ./my.ini
+$> cat ./my.ini
+title=A wonderful book
+
+~~~
+
+
