@@ -1,4 +1,4 @@
-.PHONY: all build clean download get-build-deps vet lint get-deps test cover
+.PHONY: all build clean download get-build-deps vet lint test cover
 
 TOOL_NAME := ini-file
 
@@ -30,8 +30,7 @@ download:
 
 get-build-deps:
 	@echo "+ Downloading build dependencies"
-	@go get golang.org/x/tools/cmd/goimports
-	@go get golang.org/x/lint/golint
+	@go install honnef.co/go/tools/cmd/staticcheck@latest
 
 vet:
 	@echo "+ Vet"
@@ -39,12 +38,8 @@ vet:
 
 lint:
 	@echo "+ Linting package"
-	@golint .
+	@staticcheck ./...
 	$(call fmtcheck, .)
-
-get-deps:
-	@echo "+ Downloading dependencies"
-	@go get -d -t ./...
 
 test:
 	@echo "+ Testing package"

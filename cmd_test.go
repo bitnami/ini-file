@@ -21,7 +21,6 @@ type iniTestValue struct {
 type iniSetTest struct {
 	name          string
 	values        []iniTestValue
-	wantErr       bool
 	initialText   string
 	expectedText  string
 	createIniFile bool
@@ -31,9 +30,7 @@ type iniSetTest struct {
 type iniGetTest struct {
 	name string
 	iniTestValue
-	wantErr       bool
 	initialText   string
-	expectedText  string
 	createIniFile bool
 	expectedErr   interface{}
 }
@@ -41,7 +38,6 @@ type iniGetTest struct {
 type iniDelTest struct {
 	name          string
 	values        []iniTestValue
-	wantErr       bool
 	initialText   string
 	expectedText  string
 	createIniFile bool
