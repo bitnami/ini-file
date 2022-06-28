@@ -15,7 +15,9 @@ func init() {
 func loadOptions() ini.LoadOptions {
 	return ini.LoadOptions{
 		// Support mysql-style "boolean" values - a key wth no value.
-		AllowBooleanKeys:    true,
+		AllowBooleanKeys: true,
+		// Support preserving arrays in original document
+		AllowShadows:        true,
 		IgnoreInlineComment: globalOpts.IgnoreInlineComments,
 	}
 }
@@ -86,7 +88,11 @@ func iniFileSet(file string, s string, key string, value interface{}) error {
 	section := iniFile.Section(s)
 	switch v := value.(type) {
 	case string:
-		section.NewKey(key, v)
+		if section.HasKey(key) && len(section.Key(key).ValueWithShadows()) == 1 {
+			section.Key(key).SetValue(v)
+		} else {
+			section.NewKey(key, v)
+		}
 	case bool:
 		section.NewBooleanKey(key)
 	default:
