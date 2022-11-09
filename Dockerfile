@@ -5,7 +5,7 @@
 # docker run --rm -it -v /tmp:/tmp bitnami/ini-file del -k "title" -s "My book" /tmp/my.ini
 #
 
-FROM golang:1.18-stretch as build
+FROM golang:1.18-bullseye as build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git make upx \
@@ -20,7 +20,7 @@ RUN make
 
 RUN upx --ultra-brute out/ini-file
 
-FROM bitnami/minideb:stretch
+FROM bitnami/minideb:bullseye
 
 COPY --from=build /go/src/app/out/ini-file /usr/local/bin/
 

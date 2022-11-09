@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	tu "github.com/bitnami/gonit/testutils"
@@ -320,7 +320,7 @@ func testFile(t *testing.T, path string, fn func(t *testing.T, contents string) 
 	if !assert.FileExists(t, path) {
 		return false
 	}
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	require.NoError(t, err)
 	return fn(t, string(data))
 }
