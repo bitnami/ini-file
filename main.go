@@ -15,7 +15,7 @@ type Options struct {
 var globalOpts = &Options{}
 
 var (
-	version   = "1.4.5"
+	version   = "1.4.6"
 	buildDate = ""
 	commit    = ""
 )
