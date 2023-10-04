@@ -1,6 +1,6 @@
 module github.com/bitnami/ini-file
 
-go 1.18
+go 1.21
 
 require (
 	github.com/bitnami/gonit v0.2.0
@@ -13,7 +13,5 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/smartystreets/goconvey v1.6.4 // indirect
 	golang.org/x/sys v0.2.0 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
 )
