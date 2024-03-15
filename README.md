@@ -1,3 +1,4 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitnami/ini-file)](https://goreportcard.com/report/github.com/bitnami/ini-file)
 [![CI](https://github.com/bitnami/ini-file/actions/workflows/main.yml/badge.svg)](https://github.com/bitnami/ini-file/actions/workflows/main.yml)
 
 # ini-file
