@@ -5,7 +5,7 @@
 # docker run --rm -it -v /tmp:/tmp bitnami/ini-file del -k "title" -s "My book" /tmp/my.ini
 #
 
-FROM golang:1.21-bullseye as build
+FROM golang:1.22-bullseye as build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git make upx \
