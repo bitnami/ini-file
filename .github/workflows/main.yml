@@ -56,7 +56,9 @@ jobs:
             out/*.tar.gz
   release:
     needs: [ 'build-and-test' ]
-    if: github.repository == 'bitnami/render-template' && startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    if: github.repository == 'bitnami/ini-file' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
