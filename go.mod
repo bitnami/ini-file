@@ -1,6 +1,6 @@
 module github.com/bitnami/ini-file
 
-go 1.24
+go 1.25
 
 require (
 	github.com/bitnami/gonit v0.2.0
